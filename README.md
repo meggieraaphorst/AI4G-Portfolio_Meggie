@@ -2,8 +2,8 @@
 
 > **This is your portfolio.** Everything you build, hand in and learn during the minor lives here.
 
-- **Name:** _your name here_
-- **Student number:** _your student number here_
+- **Name:** _Meggie Raaphorst_
+- **Student number:** _24020230_
 - **Cohort / year:** _e.g. 2026-2027_
 
 ---
