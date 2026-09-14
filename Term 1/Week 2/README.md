@@ -24,36 +24,37 @@ _List the files, or link to them. Notebook exports, screenshots, scripts._
 > Write them down here once you know them.
 
 **Project title:**
-
+FlowCheck
 **My pair partner:**
-
+Arbër Deda
 **Tool we had to use:**
-
+n8n
 **SDG we had to address:**
-
+SDG 3 — Good Health & Well-being
 **What problem does it solve, and for whom?**
-_Name a real, specific user. "Everyone" is not a user._
+_FlowCheck is designed for higher education students who experience busy or stressful study days due to classes, deadlines and other commitments. Students may not always take the time to reflect on their workload and well-being. FlowCheck aims to make this easier by automatically providing a short daily well-being check based on information from their day._
 
 **What did you build?**
-_Two or three sentences. What can a user actually do with it?_
+_We built an automated n8n workflow that collects information from a student's calendar and messages and processes this data to understand how busy their day is. An AI model uses the processed information to generate a short, personalised well-being message, which is then automatically sent to the user._
 
 **Link to the live thing (if any):**
-_Deployed URL, workflow export, video demo - whatever proves it works._
-
+https://arberdeda.app.n8n.cloud/workflow/MTLZg1MZ1E7J7gcb?projectId=zJqrgFeAfUg3KkyA
+n8n.io - Workflow Automation
+ 
 **How do I run it?**
-_Short instructions so someone else can start it._
+_Import the FlowCheck workflow into n8n and connect the required accounts and credentials. Once the workflow is activated, the Schedule Trigger starts FlowCheck automatically. The workflow collects and processes the available data, sends it to the AI model and automatically sends the generated FlowCheck message to the user._
 
 **Who did what?**
-_Be honest about the split of work between you and your partner._
+_We worked on the project together step by step through Microsoft Teams. We shared our screen while building the n8n workflow, discussed each step together, tested the different nodes and solved problems as they came up. There was no strict division of tasks; we developed and tested the prototype collaboratively._
 
 **Ethical reflection - what are the risks of your tool? Who could it harm?**
-_Every hackathon requires this. One honest paragraph beats three vague ones._
+_FlowCheck uses personal information from a user's calendar and messages, which means privacy is an important risk. Users should know what information the workflow accesses and remain in control of their data. Another limitation is that AI can interpret someone's day incorrectly. A busy calendar does not necessarily mean that someone is stressed, so the generated feedback should be treated as a suggestion rather than a fact. FlowCheck is designed to support awareness of well-being and should never diagnose mental-health conditions or replace professional help. For this reason, the AI is limited to general well-being suggestions rather than medical advice._
 
 ### Checklist
 - [ ] Prototype code (or export / workflow file) is in `hackathon/`
 - [ ] This week's slides are in `hackathon/`
 - [ ] The prototype actually runs, and I wrote down how to run it
-- [ ] Ethical reflection written above
+- [x] Ethical reflection written above
 
 ---
 
