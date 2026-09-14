@@ -31,6 +31,7 @@ Arbër Deda
 n8n
 **SDG we had to address:**
 SDG 3 — Good Health & Well-being
+
 **What problem does it solve, and for whom?**
 _FlowCheck is designed for higher education students who experience busy or stressful study days due to classes, deadlines and other commitments. Students may not always take the time to reflect on their workload and well-being. FlowCheck aims to make this easier by automatically providing a short daily well-being check based on information from their day._
 
@@ -40,7 +41,10 @@ _We built an automated n8n workflow that collects information from a student's c
 **Link to the live thing (if any):**
 https://arberdeda.app.n8n.cloud/workflow/MTLZg1MZ1E7J7gcb?projectId=zJqrgFeAfUg3KkyA
 n8n.io - Workflow Automation
- 
+
+**Link to demo video**
+https://youtu.be/UX8CtM03yLo
+
 **How do I run it?**
 _Import the FlowCheck workflow into n8n and connect the required accounts and credentials. Once the workflow is activated, the Schedule Trigger starts FlowCheck automatically. The workflow collects and processes the available data, sends it to the AI model and automatically sends the generated FlowCheck message to the user._
 
