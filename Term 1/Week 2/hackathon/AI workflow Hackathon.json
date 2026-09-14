@@ -1,0 +1,591 @@
+{
+  "name": "AI workflow Hackathon",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 12
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -272,
+        176
+      ],
+      "id": "3b29fc20-d6f3-43b7-b845-f0539e6c4c11",
+      "name": "Daily Flowcheck Trigger"
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "includeRecurringInstances": true,
+        "startDateTime": "={{ $now.startOf('day').toISO() }}",
+        "endDateTime": "={{ $now.endOf('day').toISO() }}"
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "36c5c40e-01b7-4896-9e78-4564e7f26dc7",
+      "name": "Get Today's Calendar Events",
+      "webhookId": "24a2e946-2c7d-447a-a291-4f0217751daa",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "v7hNRtlLN19Q0Py4",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "events = []\n\nfor item in _items:\n    event = item[\"json\"]\n\n    if (\n        event.get(\"start\", {}).get(\"dateTime\")\n        and event.get(\"end\", {}).get(\"dateTime\")\n    ):\n        # Als Outlook dit veld meegeeft, negeren we all-day events.\n        # Een all-day reminder betekent namelijk niet automatisch\n        # dat iemand 24 uur bezig is.\n        if event.get(\"isAllDay\") is True:\n            continue\n\n        events.append(event)\n\n\n# --------------------------------------------------\n# Geen afspraken vandaag\n# --------------------------------------------------\n\nif len(events) == 0:\n    return [\n        {\n            \"json\": {\n                \"event_count\": 0,\n                \"scheduled_hours\": 0,\n                \"day_span_hours\": 0,\n                \"short_gaps\": 0,\n                \"first_event_utc\": None,\n                \"last_event_utc\": None\n            }\n        }\n    ]\n\n\n# --------------------------------------------------\n# Tijd omzetten naar minuten\n# --------------------------------------------------\n\ndef time_to_minutes(date_time):\n    # Voorbeeld:\n    # 2026-09-14T14:30:00.0000000\n\n    time_part = date_time.split(\"T\")[1]\n\n    hour = int(time_part[0:2])\n    minute = int(time_part[3:5])\n\n    return hour * 60 + minute\n\n\n# --------------------------------------------------\n# Events voorbereiden\n# --------------------------------------------------\n\nparsed_events = []\n\nfor event in events:\n    start_string = event[\"start\"][\"dateTime\"]\n    end_string = event[\"end\"][\"dateTime\"]\n\n    parsed_events.append({\n        \"start_minutes\": time_to_minutes(start_string),\n        \"end_minutes\": time_to_minutes(end_string),\n        \"start_string\": start_string,\n        \"end_string\": end_string\n    })\n\n\n# Sorteer op begintijd\nparsed_events.sort(key=lambda event: event[\"start_minutes\"])\n\n\n# --------------------------------------------------\n# Overlappende afspraken samenvoegen\n# --------------------------------------------------\n#\n# Voorbeeld:\n#\n# Event A: 08:00 - 18:00\n# Event B: 09:00 - 10:00\n#\n# Oude berekening:\n# 10 uur + 1 uur = 11 uur\n#\n# Nieuwe berekening:\n# 08:00 - 18:00 = 10 unieke bezette uren\n# --------------------------------------------------\n\nmerged_events = []\n\nfor event in parsed_events:\n\n    # Eerste event\n    if len(merged_events) == 0:\n        merged_events.append({\n            \"start_minutes\": event[\"start_minutes\"],\n            \"end_minutes\": event[\"end_minutes\"]\n        })\n        continue\n\n    last = merged_events[-1]\n\n    # Dit event overlapt met het vorige blok\n    if event[\"start_minutes\"] < last[\"end_minutes\"]:\n\n        # Alleen het einde verlengen als dit event later eindigt\n        if event[\"end_minutes\"] > last[\"end_minutes\"]:\n            last[\"end_minutes\"] = event[\"end_minutes\"]\n\n    else:\n        # Geen overlap: nieuw bezet blok\n        merged_events.append({\n            \"start_minutes\": event[\"start_minutes\"],\n            \"end_minutes\": event[\"end_minutes\"]\n        })\n\n\n# --------------------------------------------------\n# Werkelijke geplande / bezette tijd\n# --------------------------------------------------\n\ntotal_minutes = 0\n\nfor event in merged_events:\n    duration = event[\"end_minutes\"] - event[\"start_minutes\"]\n    total_minutes += duration\n\n\n# --------------------------------------------------\n# Korte pauzes tussen BEZETTE BLOKKEN\n# --------------------------------------------------\n#\n# We kijken hier naar merged_events in plaats van alle\n# losse afspraken. Daardoor verstoren overlappende events\n# de pauzeberekening niet.\n# --------------------------------------------------\n\nshort_gaps = 0\n\nfor i in range(1, len(merged_events)):\n    gap = (\n        merged_events[i][\"start_minutes\"]\n        - merged_events[i - 1][\"end_minutes\"]\n    )\n\n    if 0 <= gap <= 15:\n        short_gaps += 1\n\n\n# --------------------------------------------------\n# Eerste begin en laatste einde\n# --------------------------------------------------\n\nfirst_event = parsed_events[0]\n\n# Niet simpelweg parsed_events[-1] gebruiken:\n# een eerder gestart event kan later eindigen.\nlatest_event = max(\n    parsed_events,\n    key=lambda event: event[\"end_minutes\"]\n)\n\n\nday_span_minutes = (\n    latest_event[\"end_minutes\"]\n    - first_event[\"start_minutes\"]\n)\n\n\n# --------------------------------------------------\n# Output\n# --------------------------------------------------\n\nreturn [\n    {\n        \"json\": {\n            # Werkelijk aantal calendar events\n            \"event_count\": len(parsed_events),\n\n            # Unieke bezette tijd, overlap telt maar één keer\n            \"scheduled_hours\": round(total_minutes / 60, 1),\n\n            # Tijd tussen eerste start en laatste einde\n            \"day_span_hours\": round(day_span_minutes / 60, 1),\n\n            # Pauzes van maximaal 15 minuten\n            # tussen unieke bezette blokken\n            \"short_gaps\": short_gaps,\n\n            \"first_event_utc\": first_event[\"start_string\"],\n            \"last_event_utc\": latest_event[\"end_string\"]\n        }\n    }\n]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        0
+      ],
+      "id": "7b3103a5-250a-4dc2-a9a4-c69fcfe6455e",
+      "name": "Analyze Calendar Activity"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "output": "raw",
+        "filtersUI": {
+          "values": {
+            "filters": {
+              "custom": "=sentDateTime ge {{$now.startOf('day').toUTC().toISO()}} and sentDateTime le {{$now.endOf('day').toUTC().toISO()}}",
+              "foldersToInclude": [
+                "AQMkADAwATM0MDAAMi1iMGU1LWZiZjYtMDACLTAwCgAuAAAD-DEIqmg02kmhHBK8-uDtZgEAypfBCZAJwEmffh8TD7UahAAAAgEJAAAA"
+              ]
+            }
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        400
+      ],
+      "id": "3340b3a1-d8b5-45b6-bab4-b472a717c444",
+      "name": "Get Sent Emails Today",
+      "webhookId": "ecd9fb29-47eb-4645-be2e-1469f50728e1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "v7hNRtlLN19Q0Py4",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "messages = []\n\nfor item in _items:\n    message = item[\"json\"]\n\n    subject = message.get(\"subject\", \"\")\n\n    # Ignore FlowCheck's own automatic emails\n    if subject.startswith(\"FlowCheck - Daily Well-being Summary\"):\n        continue\n\n    if message.get(\"sentDateTime\"):\n        messages.append(message)\n\n\n# No sent emails found\nif len(messages) == 0:\n    return [\n        {\n            \"json\": {\n                \"sent_emails_today\": 0,\n                \"first_sent_email_utc\": None,\n                \"last_sent_email_utc\": None\n            }\n        }\n    ]\n\n\n# Sort by sent time\nmessages.sort(key=lambda message: message[\"sentDateTime\"])\n\nfirst_email = messages[0][\"sentDateTime\"]\nlast_email = messages[-1][\"sentDateTime\"]\n\n\nreturn [\n    {\n        \"json\": {\n            \"sent_emails_today\": len(messages),\n            \"first_sent_email_utc\": first_email,\n            \"last_sent_email_utc\": last_email\n        }\n    }\n]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        400
+      ],
+      "id": "897205f2-0200-4516-bc63-e8adb09e6bf3",
+      "name": "Analyze Email Activity"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        624,
+        208
+      ],
+      "id": "8e672e9a-bd0b-483d-a9f5-8041a45cc20b",
+      "name": "Merge Workload Indicators"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-nano",
+          "mode": "list",
+          "cachedResultName": "GPT-5-NANO"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are FlowCheck, a student well-being assistant.\n\nYour task is to generate exactly 2 short, practical well-being suggestions for the remainder of today using ONLY the workload indicators provided.\n\nThe indicators describe calendar activity and sent-email activity. They do NOT measure the student's actual mental state.\n\nIMPORTANT RULES:\n- Give exactly 2 suggestions.\n- Output only the 2 bullet points.\n- Do not add a heading, introduction, conclusion, or summary.\n- Do NOT repeat the workload level, scheduled hours, calendar events, day span, short gaps, email count, or workload reasons.\n- Do NOT start with phrases such as \"Detected schedule load\", \"Your schedule load is...\", or \"Today includes...\".\n\nSAFETY AND ACCURACY:\n- Never diagnose a health or mental health condition.\n- Never claim that the student is stressed, anxious, burned out, depressed, tired, overwhelmed, or sleep deprived.\n- Never provide medical advice.\n- Never invent events, tasks, deadlines, meetings, breaks, emotions, sleep patterns, or other information not present in the input.\n- Never contradict the supplied indicators.\n- A low workload does not mean the student feels well.\n- A high workload does not mean the student is stressed.\n\nSCHEDULE RULES:\n- If short_gaps = 0, do not claim that events are back-to-back or that breaks are missing.\n- If event_count <= 1, do not refer to multiple events or breaks between events.\n- If workload_level is low, focus on preserving unscheduled time and recovery rather than adding activities.\n- If workload_level is moderate or high, focus on protecting breaks, recovery time, boundaries, or a clear stopping point.\n- Do not recommend additional work, study sessions, productivity tasks, inbox checks, email follow-ups, or new tasks.\n\nEMAIL RULES:\n- Email activity is background workload context only.\n- Never suggest checking, replying to, following up on, or sending emails because of the email count.\n- Never mention email subjects, recipients, message content, or other private information.\n\nSUGGESTION STYLE:\n- Each suggestion must be one bullet point.\n- Each suggestion should be approximately 10–20 words.\n- Suggestions must be directly related to the provided workload indicators.\n- Focus on recovery, breaks, boundaries, movement, or preserving free time.\n- Use simple, natural English that sounds appropriate for students.\n- Prefer straightforward suggestions about protecting free time, taking a proper break, going for a short walk, stretching, or setting a clear stopping point.\n- Good examples of the desired style are:\n  - \"Keep some of your free time later today available for a proper break.\"\n  - \"Set a clear stopping point after your final scheduled activity to protect your free time.\"\n- Use the examples only as a style guide. Do not copy them if they do not fit the provided indicators.\n- Avoid robotic or unnatural phrases such as \"unplanned time\", \"during the rest of today\", \"recovery activity\", or \"your next commitment\".\n- Avoid vague or overly polished wellness language such as \"gentle movement\", \"nourishing activity\", \"mindful reset\", or similar phrases.\n- Do not claim that there is a long free period unless the provided indicators support that.\n- Do not refer to a \"next\" or \"final\" scheduled activity unless the calendar information supports that wording.\n- Avoid generic advice about hydration, food, screen time, or sleep unless explicitly supported by the input.\n- NEVER invent or choose exact durations.\n- Do not use specific numbers of minutes unless a duration is explicitly provided in the input.\n- Keep the tone factual, supportive, natural, and neutral.\n- Keep the total response under 45 words."
+            },
+            {
+              "content": "=Generate exactly 2 short well-being suggestions for the remainder of today based on these workload indicators:\n\nWorkload level: {{ $json.workload_level }}\nScheduled hours today: {{ $json.scheduled_hours }}\nCalendar events today: {{ $json.event_count }}\nDay span: {{ $json.day_span_hours }} hours\nShort gaps (15 minutes or less): {{ $json.short_gaps }}\nSent emails so far today: {{ $json.sent_emails_today }}\nDetected workload reasons: {{ JSON.stringify($json.workload_reasons) }}\n\nUse only patterns supported by these values.\n\nDo not repeat the statistics.\nDo not make assumptions about how the student feels.\nReturn exactly 2 bullet points and nothing else."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1072,
+        208
+      ],
+      "id": "f85b344e-1b46-4223-b80f-4a8ffff89c9a",
+      "name": "Generate Well-being Suggestions",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "01fcb887-5a84-4997-b65b-5d967de88176",
+              "name": "date",
+              "value": "={{ $now.toISODate() }}",
+              "type": "string"
+            },
+            {
+              "id": "e2247284-b4ff-4d02-a2f0-9a7a5c5d5422",
+              "name": "workload_level",
+              "value": "={{ $('Determine Daily Workload').item.json.workload_level}}",
+              "type": "string"
+            },
+            {
+              "id": "06227a46-17da-4284-82b5-a8510b4125e0",
+              "name": "workload_score",
+              "value": "={{ $('Determine Daily Workload').item.json.workload_score }}",
+              "type": "number"
+            },
+            {
+              "id": "66080528-e69d-4956-a08d-6c58133e031e",
+              "name": "scheduled_hours",
+              "value": "={{ $('Determine Daily Workload').item.json.scheduled_hours }}",
+              "type": "number"
+            },
+            {
+              "id": "55a8c701-eaea-421d-b35d-d33b1c6f04b9",
+              "name": "day_span_hours",
+              "value": "={{ $('Determine Daily Workload').item.json.day_span_hours }}",
+              "type": "number"
+            },
+            {
+              "id": "cb6a6a07-7b67-4eb9-816f-eb691c0226cb",
+              "name": "event_count",
+              "value": "={{ $('Determine Daily Workload').item.json.event_count }}",
+              "type": "number"
+            },
+            {
+              "id": "e639cc23-5d5c-4d86-9337-753854f133a8",
+              "name": "short_gaps",
+              "value": "={{ $('Determine Daily Workload').item.json.short_gaps }}",
+              "type": "number"
+            },
+            {
+              "id": "ff8d4fa5-c78f-439f-8770-63ad86605fa3",
+              "name": "sent_emails_today",
+              "value": "={{ $('Determine Daily Workload').item.json.sent_emails_today }}",
+              "type": "number"
+            },
+            {
+              "id": "e8214317-b4e0-4c29-aef8-cc5c0839fbbb",
+              "name": "ai_message",
+              "value": "={{ $json.output[0].content[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "8275dfc5-47e6-4b82-81be-46c7494c4c77",
+              "name": "late_evening_activity",
+              "value": "={{ \n  $('Analyze Email Activity').item.json.last_sent_email_utc\n    ? DateTime.fromISO($('Analyze Email Activity').item.json.last_sent_email_utc)\n        .setZone('Europe/Amsterdam')\n        .toFormat('HH:mm') >= '22:30'\n    : false\n}}",
+              "type": "boolean"
+            },
+            {
+              "id": "5e791e75-8e11-486a-a82d-d1e9b722b792",
+              "name": "extreme_schedule",
+              "value": "={{ $('Determine Daily Workload').item.json.extreme_schedule }}",
+              "type": "boolean"
+            },
+            {
+              "id": "0f8bdaa0-ad0d-4b36-9542-6ae768c6096c",
+              "name": "workload_reasons",
+              "value": "={{ JSON.stringify($('Determine Daily Workload').item.json.workload_reasons) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1440,
+        208
+      ],
+      "id": "2f836a9b-d0ef-4e86-806e-d398166a1bf0",
+      "name": "Prepare Daily Summary"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "gyvH2eeouRTvZ7Nc",
+          "mode": "list",
+          "cachedResultName": "flowcheck daily 1",
+          "cachedResultUrl": "/projects/zJqrgFeAfUg3KkyA/datatables/gyvH2eeouRTvZ7Nc"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "date",
+              "keyValue": "={{ $json.date }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "late_evening_activity": "={{ $json.late_evening_activity }}",
+            "extreme_schedule": "={{ $json.extreme_schedule }}",
+            "date": "={{ $json.date }}",
+            "workload_level": "={{ $json.workload_level }}",
+            "workload_score": "={{ $json.workload_score }}",
+            "scheduled_hours": "={{ $json.scheduled_hours }}",
+            "day_span_hours": "={{ $json.day_span_hours }}",
+            "event_count": "={{ $json.event_count }}",
+            "short_gaps": "={{ $json.short_gaps }}",
+            "sent_emails_today": "={{ $json.sent_emails_today }}",
+            "workload_reasons": "={{ $json.workload_reasons }}",
+            "ai_message": "={{ $json.ai_message }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "workload_level",
+              "displayName": "workload_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "workload_score",
+              "displayName": "workload_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "scheduled_hours",
+              "displayName": "scheduled_hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "day_span_hours",
+              "displayName": "day_span_hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "event_count",
+              "displayName": "event_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "short_gaps",
+              "displayName": "short_gaps",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "sent_emails_today",
+              "displayName": "sent_emails_today",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "late_evening_activity",
+              "displayName": "late_evening_activity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "extreme_schedule",
+              "displayName": "extreme_schedule",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "workload_reasons",
+              "displayName": "workload_reasons",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ai_message",
+              "displayName": "ai_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1648,
+        208
+      ],
+      "id": "b6f36fec-ad5d-4483-b80c-25a2eac25c86",
+      "name": "Save Daily Result"
+    },
+    {
+      "parameters": {
+        "toRecipients": "arberhackathon@outlook.com",
+        "subject": "FlowCheck - Daily Well-being Summary",
+        "bodyContent": "=Hi,\n\nHere is your FlowCheck summary for today.\n\nSchedule load: {{ $json.workload_level }}\nScheduled hours: {{ $json.scheduled_hours }}\nCalendar events: {{ $json.event_count }}\nSent emails so far today: {{ $json.sent_emails_today }}\n\nSuggestions for the rest of today:\n{{ $json.ai_message }}\n\nFlowCheck uses calendar and email activity as workload indicators only.\nIt does not diagnose stress or mental health conditions.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        208
+      ],
+      "id": "fcce2af0-557b-44fe-9b74-7f81b9994cae",
+      "name": "Send FlowCheck Summary",
+      "webhookId": "0e179c3f-4993-4831-b6c8-afc7edcf68c0",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "v7hNRtlLN19Q0Py4",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "data = _items[0][\"json\"]\n\nscheduled_hours = data.get(\"scheduled_hours\", 0)\nday_span_hours = data.get(\"day_span_hours\", 0)\nevent_count = data.get(\"event_count\", 0)\nshort_gaps = data.get(\"short_gaps\", 0)\nsent_emails = data.get(\"sent_emails_today\", 0)\n\nscore = 0\nreasons = []\n\n\n# --------------------------------------------------\n# 1. Geplande uren\n# --------------------------------------------------\n# Dit is de belangrijkste indicator van schedule load.\n\nif scheduled_hours >= 12:\n    score += 4\n    reasons.append(\"extremely long scheduled day\")\n\nelif scheduled_hours >= 10:\n    score += 3\n    reasons.append(\"very long scheduled day\")\n\nelif scheduled_hours >= 8:\n    score += 2\n    reasons.append(\"many scheduled hours\")\n\nelif scheduled_hours >= 6:\n    score += 1\n    reasons.append(\"moderately high scheduled hours\")\n\n\n# --------------------------------------------------\n# 2. Totale span van de dag\n# --------------------------------------------------\n# Bijvoorbeeld:\n# eerste afspraak 08:00\n# laatste afspraak eindigt 21:00\n# = 13 uur day span\n\nif day_span_hours >= 13:\n    score += 2\n    reasons.append(\"very long day span\")\n\nelif day_span_hours >= 11:\n    score += 1\n    reasons.append(\"long day span\")\n\n\n# --------------------------------------------------\n# 3. Aantal agenda-afspraken\n# --------------------------------------------------\n\nif event_count >= 8:\n    score += 2\n    reasons.append(\"very high number of calendar events\")\n\nelif event_count >= 6:\n    score += 1\n    reasons.append(\"many calendar events\")\n\n\n# --------------------------------------------------\n# 4. Korte pauzes tussen afspraken\n# --------------------------------------------------\n# short_gaps betekent:\n# pauzes van 15 minuten of minder tussen calendar events.\n\nif short_gaps >= 4:\n    score += 2\n    reasons.append(\"many short gaps between events\")\n\nelif short_gaps >= 2:\n    score += 1\n    reasons.append(\"multiple short gaps between events\")\n\n\n# --------------------------------------------------\n# 5. E-mailactiviteit\n# --------------------------------------------------\n# E-mail telt bewust minder zwaar mee.\n# Veel mails betekenen digitale activiteit,\n# maar bewijzen niet dat iemand gestrest is.\n\nif sent_emails >= 20:\n    score += 1\n    reasons.append(\"high email activity\")\n\n\n# --------------------------------------------------\n# 6. Extreme schedule check\n# --------------------------------------------------\n# Sommige dagen zijn duidelijk zwaar genoeg om direct\n# als high schedule load te classificeren,\n# onafhankelijk van de totale score.\n\nextreme_schedule = (\n    scheduled_hours >= 12\n    or day_span_hours >= 13\n)\n\n\n# --------------------------------------------------\n# 7. Workload level bepalen\n# --------------------------------------------------\n\nif extreme_schedule:\n    workload_level = \"high\"\n\nelif score >= 4:\n    workload_level = \"high\"\n\nelif score >= 2:\n    workload_level = \"moderate\"\n\nelse:\n    workload_level = \"low\"\n\n\n# --------------------------------------------------\n# 8. Score begrenzen\n# --------------------------------------------------\n# De score is alleen een interne heuristic.\n# Het is GEEN health score of stress score.\n\nscore = min(score, 10)\n\n\n# --------------------------------------------------\n# 9. Resultaat toevoegen\n# --------------------------------------------------\n\ndata[\"workload_score\"] = score\ndata[\"workload_level\"] = workload_level\ndata[\"workload_reasons\"] = reasons\ndata[\"extreme_schedule\"] = extreme_schedule\n\n\nreturn [\n    {\n        \"json\": data\n    }\n]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        208
+      ],
+      "id": "af59c490-f6a1-4736-8cc5-943141ea6e24",
+      "name": "Determine Daily Workload"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Daily Flowcheck Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Sent Emails Today",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Today's Calendar Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Today's Calendar Events": {
+      "main": [
+        [
+          {
+            "node": "Analyze Calendar Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Calendar Activity": {
+      "main": [
+        [
+          {
+            "node": "Merge Workload Indicators",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Sent Emails Today": {
+      "main": [
+        [
+          {
+            "node": "Analyze Email Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Email Activity": {
+      "main": [
+        [
+          {
+            "node": "Merge Workload Indicators",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Workload Indicators": {
+      "main": [
+        [
+          {
+            "node": "Determine Daily Workload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Well-being Suggestions": {
+      "main": [
+        [
+          {
+            "node": "Prepare Daily Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Daily Summary": {
+      "main": [
+        [
+          {
+            "node": "Save Daily Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Daily Result": {
+      "main": [
+        [
+          {
+            "node": "Send FlowCheck Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Daily Workload": {
+      "main": [
+        [
+          {
+            "node": "Generate Well-being Suggestions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "8e946254-8b3b-4c31-a17d-3d5673233984",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2ae8c4a98067384131052ea6f1fef40197fcc4e8afa52d6657b3715037732ca9"
+  },
+  "nodeGroups": [],
+  "id": "MTLZg1MZ1E7J7gcb",
+  "tags": []
+}
