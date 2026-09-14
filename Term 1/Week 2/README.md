@@ -78,6 +78,7 @@ Next time, I would probably choose a different concept. FlowCheck worked well fo
 ## 4. Reflection
 
 **What is the most important thing I learned this week?**
+_The most important thing I learned this week is how automation works and how different steps can be connected in n8n. I learned that a workflow can collect and process data automatically, use AI to work with that data, and then create an output without having to manually start every step._
 
 **Where does this connect to "AI for Good"?**
-_The most important thing I learned this week is how automation works and how different steps can be connected in n8n. I learned that a workflow can collect and process data automatically, use AI to work with that data, and then create an output without having to manually start every step._
+_This connects to AI for Good because we used AI to support students’ well-being, which relates to SDG 3: Good Health and Well-being. FlowCheck shows how AI and automation can be used for a positive purpose by helping students become more aware of their busy days and reminding them to take care of their well-being._
