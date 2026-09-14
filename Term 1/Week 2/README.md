@@ -30,7 +30,7 @@ Arbër Deda
 **Tool we had to use:**
 n8n
 **SDG we had to address:**
-SDG 3 — Good Health & Well-being
+_SDG 3 — Good Health & Well-being_
 
 **What problem does it solve, and for whom?**
 _FlowCheck is designed for higher education students who experience busy or stressful study days due to classes, deadlines and other commitments. Students may not always take the time to reflect on their workload and well-being. FlowCheck aims to make this easier by automatically providing a short daily well-being check based on information from their day._
@@ -55,9 +55,9 @@ _We worked on the project together step by step through Microsoft Teams. We shar
 _FlowCheck uses personal information from a user's calendar and messages, which means privacy is an important risk. Users should know what information the workflow accesses and remain in control of their data. Another limitation is that AI can interpret someone's day incorrectly. A busy calendar does not necessarily mean that someone is stressed, so the generated feedback should be treated as a suggestion rather than a fact. FlowCheck is designed to support awareness of well-being and should never diagnose mental-health conditions or replace professional help. For this reason, the AI is limited to general well-being suggestions rather than medical advice._
 
 ### Checklist
-- [ ] Prototype code (or export / workflow file) is in `hackathon/`
-- [ ] This week's slides are in `hackathon/`
-- [ ] The prototype actually runs, and I wrote down how to run it
+- [x] Prototype code (or export / workflow file) is in `hackathon/`
+- [x] This week's slides are in `hackathon/`
+- [x] The prototype actually runs, and I wrote down how to run it
 - [x] Ethical reflection written above
 
 ---
@@ -67,16 +67,17 @@ _FlowCheck uses personal information from a user's calendar and messages, which 
 *Only fill this in for the week your group was selected to present. You need at least **one** of these across the whole term.*
 
 - [ ] My group presented in this week
-- [ ] Slides are in `presentation/`
-- [ ] Proof of the live demo is in `presentation/` (recording, screenshots, or link)
+- [x] Slides are in `presentation/`
+- [x] Proof of the live demo is in `presentation/` (recording, screenshots, or link)
 
 **How did it go? What would I do differently next time?**
 
----
+--Overall, the project went well. n8n was new to us, so we had to learn how the different nodes and connections worked while building the prototype. We worked together step by step and eventually created a working FlowCheck workflow.
+Next time, I would probably choose a different concept. FlowCheck worked well for this assignment, but I would like to experiment with another type of automation and explore more of what n8n can do.
 
 ## 4. Reflection
 
 **What is the most important thing I learned this week?**
 
 **Where does this connect to "AI for Good"?**
-_One concrete link to ethics, sustainability or social impact._
+_The most important thing I learned this week is how automation works and how different steps can be connected in n8n. I learned that a workflow can collect and process data automatically, use AI to work with that data, and then create an output without having to manually start every step._
