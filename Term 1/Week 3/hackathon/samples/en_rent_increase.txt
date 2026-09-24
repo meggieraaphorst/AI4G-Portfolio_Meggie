@@ -1,0 +1,17 @@
+Exampleton Housing Association
+Notice of Rent Increase
+
+Date: 1 September 2026
+
+Dear Tenant,
+
+In accordance with the terms of your tenancy agreement, we hereby give notice that the rent payable for the above property will be increased from £725.00 per calendar month to £761.25 per calendar month, with effect from 1 November 2026.
+
+Should you wish to dispute the proposed increase, you may refer this notice to the rent tribunal prior to the commencement date specified above. Failure to do so will be deemed acceptance of the revised rent.
+
+Please ensure that any standing order or direct debit arrangements are amended accordingly. Tenants in receipt of housing benefit are advised to notify the relevant authority of the change in housing costs without delay.
+
+Yours faithfully,
+Income Management Team
+
+(Fictional example letter for testing ClearForMe.)
