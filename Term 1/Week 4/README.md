@@ -78,7 +78,7 @@ If we continued the project, we would further validate the environmental claims 
 
 ### Checklist
 - [x] Prototype code (or export / workflow file) is in `hackathon/`
-- [ ] This week's slides are in `hackathon/`
+- [x] This week's slides are in `hackathon/`
 - [x] The prototype actually runs, and I wrote down how to run it
 - [x] Ethical reflection written above
 
