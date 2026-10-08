@@ -62,10 +62,10 @@ Therefore, the model should only be used to offer confidential and voluntary sup
 The dataset contains historical data from Polish companies, so the model may not work equally well for companies in other countries or time periods. This means the model should not be used in a different context without first checking whether it still performs well._
 
 ### Checklist
-- [ ] Prototype code (or export / workflow file) is in `hackathon/`
-- [ ] This week's slides are in `hackathon/`
-- [ ] The prototype actually runs, and I wrote down how to run it
-- [ ] Ethical reflection written above
+- [x] Prototype code (or export / workflow file) is in `hackathon/`
+- [x] This week's slides are in `hackathon/`
+- [x] The prototype actually runs, and I wrote down how to run it
+- [x] Ethical reflection written above
 
 ---
 
