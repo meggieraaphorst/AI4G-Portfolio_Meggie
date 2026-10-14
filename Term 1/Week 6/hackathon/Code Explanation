@@ -1,0 +1,176 @@
+# SolarMood: Code Explanation
+
+## How does SolarMood work?
+
+SolarMood is a Python project that automatically collects news articles about solar energy and uses AI to analyse the sentiment of the headlines.
+
+The results are saved in a CSV file and displayed in a Streamlit dashboard.
+
+We used different Python files, each with its own task.
+
+## 1. `collector.py` – Collecting and analysing news
+
+This is the main part of our project.
+
+**Step 1: Finding news articles**
+
+We use Google News RSS to search for articles using four keywords:
+
+- Solar energy
+- Solar panels
+- Solar power
+- Solar technology
+
+The code searches for articles from the past day and collects their titles, publication dates and links.
+
+We use the `requests` library to get the news data and `ElementTree` to read the RSS information.
+
+**Step 2: Removing duplicates**
+
+Some articles appear under multiple search terms.
+
+The code first removes duplicate results based on their links or titles. It also checks whether an article's title is already saved in our CSV file.
+
+This prevents us from analysing and saving the same headline multiple times.
+
+**Step 3: Using AI for sentiment analysis**
+
+We use a pretrained AI model from Hugging Face:
+
+`cardiffnlp/twitter-roberta-base-sentiment-latest`
+
+The model analyses each new headline and predicts whether the sentiment is:
+
+- Positive
+- Neutral
+- Negative
+
+It also gives a confidence score, which shows how confident the model is about its prediction.
+
+We did not train this model ourselves. We used an existing model and connected it to our news collector.
+
+**Step 4: Saving the results**
+
+We use the `pandas` library to store the results in `solarmood.csv`.
+
+For every new article, we save:
+
+| Column | What it means |
+|---|---|
+| `title` | The news headline |
+| `date` | When the article was published |
+| `sentiment` | The AI prediction |
+| `confidence` | The model's confidence score |
+| `collected_at` | When our program collected the article |
+
+The new articles are added to the existing dataset instead of replacing it.
+
+## 2. `auto_collect.py` – Automatic collection
+
+At first, we had to start `collector.py` manually whenever we wanted to collect new articles.
+
+To make this automatic, I added another Python script called `auto_collect.py`.
+
+This script uses a `while True` loop, which keeps the program running.
+
+It follows three steps:
+
+1. Run `collector.py` to collect and analyse new articles.
+2. Wait 30 minutes using `time.sleep(30 * 60)`.
+3. Start the collector again.
+
+This allowed me to leave my laptop running overnight while SolarMood continued collecting articles.
+
+The disadvantage is that this method only works while the laptop is on and the Python script is running.
+
+## 3. GitHub Actions – Collecting in the cloud
+
+We also created a GitHub Actions workflow in `.github/workflows/solarmood.yml`.
+
+The idea is to automate the collection without needing to keep a laptop running.
+
+The workflow is scheduled to run twice per hour, at 17 and 47 minutes past the hour.
+
+When it runs, GitHub:
+
+1. Downloads the project files.
+2. Installs Python and the required libraries.
+3. Runs `collector.py`.
+4. Checks whether `solarmood.csv` has changed.
+5. Commits and pushes the updated CSV file if new data was added.
+
+We initially had some difficulties getting GitHub Actions to work, so I also used the local automatic collection script.
+
+## 4. `dashboard.py` – Visualising the results
+
+We used Streamlit to create an interactive dashboard.
+
+The dashboard reads the collected data from `solarmood.csv` and shows it in a more understandable way.
+
+**Total articles**
+
+At the top of the dashboard, we show how many articles have been collected.
+
+**Sentiment distribution**
+
+We use a bar chart to show how many headlines were classified as positive, neutral or negative.
+
+**Sentiment over time**
+
+The code uses the publication dates to group articles by hour.
+
+A line chart shows how the number of headlines in each sentiment category changes over time.
+
+**Filtering articles**
+
+Users can filter the results by sentiment and publication hour.
+
+This makes it possible to explore specific articles instead of looking through the entire dataset.
+
+## 5. `solarmood.csv` – Our dataset
+
+This file stores all the collected headlines and their AI predictions.
+
+During the hackathon, we collected more than 800 articles.
+
+Because the data is saved in a CSV file, we can use it for our dashboard and further analysis.
+
+## 6. `requirements.txt` – Required libraries
+
+This file lists the Python libraries needed to run SolarMood.
+
+- `requests` – Downloads news data from Google News RSS.
+- `pandas` – Reads, saves and processes our dataset.
+- `transformers` – Loads the Hugging Face sentiment model.
+- `torch` – Supports running the AI model.
+- `streamlit` – Creates the interactive dashboard.
+
+## What did we learn?
+
+During this hackathon, we learned how different Python scripts can work together.
+
+Before this project, we did not really know how to automatically collect information from the internet and use an AI model to analyse it.
+
+Now we understand that `collector.py` handles the data collection and AI predictions, `auto_collect.py` repeats this process automatically, and `dashboard.py` turns the saved results into graphs.
+
+We also learned how GitHub can be used to store the code and dataset, and how GitHub Actions can help automate a project.
+
+One of the biggest challenges was making the automatic collection work. I we different solutions and eventually got the local Python script working.
+
+## Limitations
+
+There are still some limitations to our project.
+
+- The AI only analyses headlines, not full articles.
+- The AI may misunderstand the meaning of a headline.
+- A neutral headline can describe a positive development for renewable energy.
+- The collected news depends on the search terms and Google News RSS results.
+- Local automatic collection stops when the laptop or script stops.
+
+This is important because SolarMood measures the sentiment of news headlines, not whether a development is actually good or bad for the environment.
+
+## Live project
+
+**Streamlit dashboard:** https://solarmood-y9ppejttifrjjrq8ygzxcm.streamlit.app
+
+**GitHub:** https://github.com/meggieraaphorst/SolarMood
