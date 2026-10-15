@@ -1,0 +1,206 @@
+# How Our Data Works: SolarMood 
+
+In this README, we explain where our data comes from, how we use AI to analyse it, and how the results appear in our dashboard.
+
+## 1. Where do we get our data?
+
+We collect news headlines about solar energy using **Google News RSS**. RSS is a way to get the latest news updates automatically, instead of opening different news websites ourselves.
+
+Our Python file `collector.py` searches for four topics:
+
+- Solar energy
+- Solar panels
+- Solar power
+- Solar technology
+
+The search is set to look for news from the **last day** using English-language US Google News settings.
+
+For each article, we collect its **headline** and **publication date**. The script also reads the article link to help identify duplicate results, but the link is not saved in our final CSV file.
+
+## 2. How do we avoid collecting the same article twice?
+
+Some articles appear under more than one search term.
+
+Our collector first removes repeated results from the same search run using the article link (or the title if no link is available).
+
+Next, it opens our existing dataset, `solarmood.csv`, and checks whether a headline is already there.
+
+If the title is already saved, the article is skipped. This helps us avoid counting the same headline multiple times.
+
+## 3. How does the AI analyse a headline?
+
+We use an existing AI model from Hugging Face called **RoBERTa** (`cardiffnlp/twitter-roberta-base-sentiment-latest`). We did not train this model ourselves.
+
+We give the model one headline at a time. It looks at the words and predicts the *sentiment*, which means how positive, neutral or negative the wording sounds.
+
+| Label | What it means |
+|---|---|
+| **Positive** | The headline sounds positive |
+| **Neutral** | The headline sounds mostly factual or neutral |
+| **Negative** | The headline sounds negative |
+
+The AI also gives a **confidence score**.
+
+For example, a score of `0.90` means the model is quite confident about its chosen label. It does **not** mean that the prediction is guaranteed to be 90% correct.
+
+**Important:** The model analyses the *tone of the headline*, not whether the news is actually good or bad for solar energy.
+
+For example, a new solar factory could be good news for the industry, but the AI might still label a factual headline about it as neutral.
+
+## 4. Where do we save the data?
+
+We save the results in a CSV file called `solarmood.csv`.
+
+A CSV is similar to a simple Excel table: every row is one article and every column stores a different piece of information.
+
+| Column | What we use it for |
+|---|---|
+| `title` | The news headline analysed by the AI |
+| `date` | When the article was published |
+| `sentiment` | The AI's label: positive, neutral or negative |
+| `confidence` | How confident the model is about that label |
+| `collected_at` | When our script saved the article, if this was recorded |
+
+In the version of `solarmood.csv` included in our final project ZIP, we have **407 articles**:
+
+| Sentiment | Number of articles |
+|---|---:|
+| Neutral | 347 |
+| Positive | 41 |
+| Negative | 19 |
+| **Total** | **407** |
+
+These numbers describe the dataset saved in this version of our project. They are not live measurements of the entire solar energy industry.
+
+## 5. How do we collect new data automatically?
+
+Normally, we can run `collector.py` ourselves whenever we want new headlines.
+
+We also created `auto_collector.py`. This script:
+
+1. Starts the collector.
+2. Waits **30 minutes**.
+3. Starts the collector again.
+4. Keeps repeating this process.
+
+The automatic collection continues while the program is running and the computer stays awake.
+
+When new headlines are found, they are analysed and added to `solarmood.csv`. Previously saved headlines stay in the file.
+
+## 6. How does the dashboard use the data?
+
+Our Streamlit dashboard (`dashboard.py`) reads `solarmood.csv` and turns the saved information into charts and filters.
+
+The dashboard contains several parts:
+
+**Total Articles**
+
+Counts the number of articles saved in our dataset.
+
+**News Sentiment**
+
+Shows how many headlines are classified as positive, neutral or negative in a bar chart.
+
+**Sentiment Over Time**
+
+Groups articles by their publication hour and sentiment, then displays the results in a line chart.
+
+**Collected News Articles**
+
+Allows users to filter articles by sentiment and publication hour.
+
+**AI Model Comparison**
+
+Shows the results of our separate test with 50 manually labelled headlines.
+
+The dashboard does **not** collect new articles by itself. It shows the data from the CSV file available to the running app.
+
+For the online dashboard to show new results, its data file must also be updated.
+
+**Live dashboard:**
+
+https://solarmood-milou-jkelt2tjctww4cb8fjsbri.streamlit.app/
+
+## 7. How did we check whether the AI makes sense?
+
+We did not want to trust the AI labels without checking them.
+
+We selected **50 headlines** and added our own positive, neutral or negative labels in an Excel file.
+
+Then we compared our labels with two methods:
+
+- **RoBERTa:** The AI model used for our main dataset.
+- **VADER:** Another sentiment analysis method that uses a word-based scoring system.
+
+Our scripts `evaluate.py` and `compare_models.py` calculate how often each method gives the same label as our human evaluation.
+
+### Our results
+
+| Method | Same label as us | Agreement |
+|---|---:|---:|
+| **RoBERTa** | 21 out of 50 | 42% |
+| **VADER** | 19 out of 50 | 38% |
+
+We also used **confusion matrices**.
+
+These are tables that show which labels were mixed up, such as when we labelled a headline positive but the AI labelled it neutral.
+
+### What did we learn from this test?
+
+At first, these percentages seemed quite low.
+
+But we realised that our human labels sometimes focused on whether the event was good or bad for the solar industry, while the models focused on how the headline was written.
+
+This means we were not always comparing exactly the same thing.
+
+The percentages show **agreement with our labels**, not the true accuracy of the models.
+
+## 8. What are the limitations of our data?
+
+There are a few things we need to keep in mind:
+
+**We only analyse headlines**
+
+We do not read the full articles, so important context may be missing.
+
+**Our news sources are limited**
+
+Google News search results do not include every article published worldwide, and our search uses English-language US settings.
+
+**The AI can misunderstand headlines**
+
+RoBERTa was not specifically trained to judge the impact of news on the solar industry.
+
+**A confidence score is not proof**
+
+A prediction can sound confident and still be wrong.
+
+**Our charts show news sentiment, not industry performance**
+
+More negative headlines do not automatically mean the solar energy industry is doing badly.
+
+## 9. What did we learn about working with data?
+
+Before this project, we did not realise how many steps were needed to turn online news into a dashboard.
+
+We learned that collecting data is only the beginning. We also need to remove duplicates, analyse the headlines, save the results correctly and check whether the AI predictions make sense.
+
+The biggest lesson for us was that **AI results need context**.
+
+A label like *positive* or *negative* seems simple, but we have to understand what the model is actually measuring before using it to draw conclusions.
+
+---
+
+## Files used in our data process
+
+| File | Purpose |
+|---|---|
+| `collector.py` | Collects headlines, runs RoBERTa and updates the CSV |
+| `auto_collector.py` | Runs the collector every 30 minutes |
+| `solarmood.csv` | Stores our collected headlines and AI predictions |
+| `dashboard.py` | Reads the CSV and shows charts and filters |
+| `SolarMood_ Human Sentiment Evaluation (1).xlsx` | Contains our manually labelled headlines |
+| `evaluate.py` | Compares human labels with RoBERTa |
+| `compare_models.py` | Compares RoBERTa and VADER with human labels |
+| `sentiment_evaluation_results.csv` | Saves the human-versus-RoBERTa comparison |
+| `model_comparison_results.csv` | Saves the comparison including VADER |
