@@ -30,7 +30,11 @@ SolarMood: Solar Energy News Sentiment Dashboard
 Milou van Leuven
 
 **Tool we had to use:**
+A pretrained sentiment analysis model from Hugging Face, using the Python transformers library.
 
+We used the RoBERTa model (cardiffnlp/twitter-roberta-base-sentiment-latest) to classify solar energy news headlines as positive, neutral or negative.
+
+We also used Python for data collection, Streamlit to visualise the results and VADER as a second sentiment analysis method for comparison.
 
 **SDG we had to address:**
 9: Industry, Innovation and Infrastructure
@@ -57,92 +61,90 @@ IEA (2026). Global Energy Review 2026 – Solar PV and Wind. https://www.iea.org
 **What did you build?**
 _We built SolarMood, an AI-powered news monitoring application.
 
-The project consists of several parts:
+### What did you build?
 
-1. Collecting news articles
+We built **SolarMood**, an AI-powered news monitoring application that automatically collects solar energy news, analyses the headlines and visualises the results in a Streamlit dashboard.
 
-We created a Python script called collector.py that collects solar energy news headlines from Google News RSS feeds.
+Our project consists of six main parts.
 
-The script searches for articles using keywords related to solar energy and retrieves information such as the title, publication date and article link.
+#### 1. Collecting news articles
 
-It also checks for duplicates to avoid collecting the same headlines multiple times.
+We created a Python script called `collector.py` that collects solar energy news headlines from Google News RSS feeds.
 
-2. Analysing the headlines with AI
+The script:
+- Searches for articles using solar energy-related keywords.
+- Collects the headline, publication date and article link.
+- Checks for duplicates to avoid saving the same article multiple times.
 
-We used a pretrained Hugging Face RoBERTa model to analyse the sentiment of each headline.
+#### 2. Analysing headlines with AI
 
-The model predicts three possible categories:
+We used a pretrained **Hugging Face RoBERTa model** to analyse the sentiment of each headline.
 
-Positive
+The model classifies headlines into three categories:
 
-Neutral
+- **Positive:** Headlines containing positive sentiment.
+- **Neutral:** Headlines written in a neutral or factual way.
+- **Negative:** Headlines containing negative sentiment.
 
-Negative
+The model also provides a confidence score for each prediction.
 
-It also provides a confidence score for each prediction.
+We did not train the AI model ourselves. Instead, we integrated an existing model into our Python project.
 
-We did not train the model ourselves. Instead, we used an existing model and connected it to our Python code.
+#### 3. Saving the results
 
-3. Saving the results
+The collected articles and AI predictions are saved in `solarmood.csv`.
 
-The collected articles and AI predictions are stored in solarmood.csv.
+This dataset contains the information needed for the dashboard and further analysis, including the headlines, dates, sentiment labels and confidence scores.
 
-This file contains the data used for the dashboard and further analysis.
+During our hackathon, we collected **815 news articles**.
 
-4. Automatic data collection
+#### 4. Automatic data collection
 
-At first, we had to run the collector manually.
+Initially, we had to run `collector.py` manually to collect new articles.
 
-I worked on automating this process by creating auto_collect.py, which uses a loop to run collector.py every 30 minutes.
+To automate this process, I worked on `auto_collect.py`, a Python script that:
 
-I left my MacBook running overnight so the program could continue collecting new articles automatically.
+1. Runs `collector.py`.
+2. Waits 30 minutes.
+3. Automatically starts the collector again.
 
-We also experimented with GitHub Actions to automate the process through GitHub, although we initially experienced problems getting it to work.
+I left my MacBook running overnight so SolarMood could continue collecting articles without manual input.
 
-5. Creating the dashboard
+We also experimented with GitHub Actions to automate collection through GitHub, but initially experienced difficulties getting it to work.
 
-We used Streamlit to create a dashboard that visualises the results.
+#### 5. Creating the Streamlit dashboard
+
+We used **Streamlit** to create an interactive dashboard that visualises the collected data.
+
 The dashboard allows users to:
 
-See the total number of collected articles.
+- View the total number of collected articles.
+- See the distribution of positive, neutral and negative headlines.
+- Explore changes in sentiment over time.
+- Filter and inspect individual articles.
 
-View the distribution of positive, neutral and negative headlines.
+This makes it easier to understand patterns in the news instead of manually reading hundreds of headlines.
 
-Explore how sentiment changes over time.
+#### 6. Evaluating the AI models
 
-Filter and inspect individual articles.
+To evaluate the sentiment predictions, we manually labelled **50 news headlines** and compared our labels with two sentiment analysis methods.
 
-6. Evaluating the AI models
+Milou worked on the comparison between RoBERTa and VADER.
 
-To investigate how reliable the sentiment predictions were, we manually labelled 50 news headlines.
+| Method | Matching human labels | Agreement |
+|---|---|---|
+| **RoBERTa** | 21/50 | 42% |
+| **VADER** | 19/50 | 38% |
 
-Milou compared these human labels with two different sentiment analysis methods:
+RoBERTa showed slightly higher agreement with our human evaluations than VADER.
 
-Method
+**What did we discover?**
 
-Matching labels
+Our manual evaluations sometimes focused on whether a development was beneficial or harmful to the solar energy industry, while the AI models mainly analysed the sentiment of the words in the headline.
 
-Agreement
+For example, a headline about a new solar power plant might be considered positive by us because it represents progress in renewable energy. However, the AI could classify it as neutral because the headline is written factually.
 
-RoBERTa
-
-21/50
-
-42%
-
-VADER
-
-19/50
-
-38%
-
-RoBERTa had slightly higher agreement with our human labels than VADER.
-
-However, we discovered that our human evaluations sometimes considered whether a development was good or bad for the solar energy industry, while the AI models mainly analysed the sentiment of the words in the headline.
-
-For example, a headline about a new solar power plant could be considered positive by us, while the AI classifies it as neutral because the wording is factual.
-
-This showed us that the models and our human evaluations were not always measuring exactly the same thing.
+**Our conclusion:** The AI models and our human evaluations did not always measure the same thing. This explains some of the disagreements and shows why clear evaluation guidelines are important.
 _
 
 **Link to the live thing (if any):**
@@ -151,66 +153,100 @@ _https://solarmood-milou-jkelt2tjctww4cb8fjsbri.streamlit.app/_
 **How do I run it?**
 _The easiest way to view SolarMood is through the live Streamlit dashboard linked above.
 
-To run the project locally:
+### How do I run it?
 
-Download or clone the SolarMood project from GitHub.
+SolarMood can be accessed directly through our [live Streamlit dashboard](https://solarmood-milou-jkelt2tjctww4cb8fjsbri.streamlit.app/).
 
-Open the project folder in VS Code.
+To run the project locally, follow the steps below.
 
-Make sure Python is installed.
+#### 1. Set up the project
 
-Open the terminal in VS Code.
+1. Download or clone the SolarMood repository from GitHub.
+2. Open the project folder in VS Code.
+3. Make sure Python is installed.
+4. Open the terminal and install the required libraries:
 
-Install the required libraries:
+   `python -m pip install -r requirements.txt`
 
-python -m pip install -r requirements.txt
+The first time you run the sentiment analysis, the pretrained Hugging Face model may take some time to download.
 
-Start the Streamlit dashboard:
+#### 2. Run the Streamlit dashboard
 
-python -m streamlit run dashboard.py
+Start the dashboard by entering this command in the terminal:
 
-Open the local URL shown in the terminal.
+`python -m streamlit run dashboard.py`
 
-To collect and analyse new articles manually, run:
+Streamlit will provide a local URL, which you can open in your browser to view the dashboard.
 
-python collector.py
+#### 3. Collect new articles
 
-To start the automatic collection every 30 minutes, run:
+To manually collect and analyse new solar energy news articles, run:
 
-python auto_collect.py
+`python collector.py`
 
-The automatic collection continues while the script is running and the computer stays awake.
+The script retrieves new headlines, analyses their sentiment and saves the results in `solarmood.csv`.
 
-The first time the collector runs, it may take longer because the pretrained Hugging Face model needs to be downloaded._
+#### 4. Run automatic data collection
 
+To automatically collect articles every 30 minutes, run:
+
+`python auto_collect.py`
+
+This script repeatedly runs the collector with a 30-minute interval.
+
+**Important:** Automatic collection through this script only works while the computer is awake and the Python program is running.
+
+#### Project files overview
+
+| File | Purpose |
+|---|---|
+| `collector.py` | Collects news articles and analyses their sentiment using AI |
+| `auto_collect.py` | Automatically runs the collector every 30 minutes |
+| `dashboard.py` | Displays the collected data in Streamlit |
+| `solarmood.csv` | Stores the collected articles and AI predictions |
+| `requirements.txt` | Lists the Python libraries needed to run the project |
 **Who did what?**
-_My contribution: Meggie
+_### Who did what?
 
-I mainly focused on getting the automatic news collection working, collecting the larger dataset and making the results available through GitHub and Streamlit.
+We worked together on SolarMood, but each focused on different parts of the project.
 
-At first, we collected articles manually. I wanted the program to continue collecting data without having to start it every time.
+#### My contribution – Meggie
 
-I worked on auto_collect.py, a Python script that automatically runs our collector every 30 minutes. I tested the script in VS Code and kept my MacBook running overnight to collect more data.
+I mainly focused on **automatic data collection, GitHub and making the results available online**.
 
-This allowed us to collect 815 news articles, which was more than the required minimum of 300.
+**Automatic news collection**
+- Worked on `auto_collect.py` to automatically run the news collector every 30 minutes.
+- Tested the Python scripts in VS Code and solved problems during the collection process.
+- Kept my MacBook running overnight to collect news articles automatically.
+- Collected a total of **815 news articles**, exceeding the minimum requirement of 300.
 
-I also worked on uploading the code and dataset to GitHub. This was challenging because I experienced problems with Git commands and merging the local project with the existing GitHub repository.
+**GitHub and Streamlit**
+- Uploaded the Python code and collected dataset to GitHub.
+- Solved GitHub issues, including problems with merging local and online files.
+- Made the collected data available through our Streamlit dashboard.
+- Documented the Python files and explained how the different parts of the project work together.
 
-After solving these issues, I successfully uploaded the collected data and made it available for our Streamlit dashboard.
+#### Milou's contribution
 
-I also worked on making the dashboard accessible online and documenting how the different parts of our code work together.
+Milou mainly focused on **model evaluation, comparing sentiment analysis methods and improving the dashboard**.
 
-Milou's contribution:
+**Evaluating the AI models**
+- Compared 50 manually labelled headlines with the predictions from RoBERTa.
+- Used VADER as a second sentiment analysis method.
+- Created Python scripts to calculate agreement percentages and confusion matrices.
+- Investigated headlines where the AI predictions differed from our human evaluations.
 
-Milou mainly focused on evaluating the AI predictions and comparing different sentiment analysis methods.
+**Testing and documentation**
+- Set up and tested the Python environment.
+- Worked on improving and testing the Streamlit dashboard.
+- Tested the news collector and explored an alternative automatic collection method.
+- Contributed to the README and project documentation.
 
-She created Python scripts to compare our 50 manually labelled headlines with the RoBERTa model and the VADER method.
+#### Collaboration
 
-She calculated the agreement percentages, created confusion matrices and investigated examples where the AI predictions differed from our human labels.
+We both contributed to developing and improving SolarMood. By dividing the tasks, we were able to focus on different technical challenges and combine our results into one project.
 
-She also tested the Python environment, worked on the Streamlit dashboard and helped document the project.
-
-We both contributed to developing and improving SolarMood, but focused on different parts of the project._
+We also learned that keeping our files synchronised through GitHub is important when working together on a programming project._
 
 **Ethical reflection - what are the risks of your tool? Who could it harm?**
 _Although SolarMood provides a useful overview of solar energy news, it has several important limitations.
