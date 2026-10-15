@@ -79,7 +79,9 @@ The dataset contains historical data from Polish companies, so the model may not
 
 **How did it go? What would I do differently next time?**
 
----
+The presentation did not go as well as I had hoped. I was very nervous, especially because I had to present in English. Because of this, I completely froze and had a blackout. I ended up reading from my phone, but I was so nervous that I did not even really understand what I was reading anymore.
+
+Next time, I would like to prepare and practise more so I feel more confident speaking English. I also want to try using short notes with keywords instead of reading full sentences from my phone. Hopefully, this will help me stay calmer and explain things more naturally during a presentation.
 
 ## 4. Reflection
 
