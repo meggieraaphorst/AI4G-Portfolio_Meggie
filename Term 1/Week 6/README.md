@@ -280,7 +280,7 @@ Mitigation: The dashboard should include a clear disclaimer that it measures new
 Overall, SolarMood should be considered a decision-support tool, not a replacement for professional judgement._
 
 ### Checklist
-- [ ] Prototype code (or export / workflow file) is in `hackathon/`
+- [x] Prototype code (or export / workflow file) is in `hackathon/`
 - [ ] This week's slides are in `hackathon/`
 - [x] The prototype actually runs, and I wrote down how to run it
 - [x] Ethical reflection written above
