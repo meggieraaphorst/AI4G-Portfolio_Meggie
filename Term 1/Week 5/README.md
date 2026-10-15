@@ -73,9 +73,9 @@ The dataset contains historical data from Polish companies, so the model may not
 
 *Only fill this in for the week your group was selected to present. You need at least **one** of these across the whole term.*
 
-- [ ] My group presented in this week
-- [ ] Slides are in `presentation/`
-- [ ] Proof of the live demo is in `presentation/` (recording, screenshots, or link)
+- [x] My group presented in this week
+- [x] Slides are in `presentation/`
+- [x] Proof of the live demo is in `presentation/` (recording, screenshots, or link)
 
 **How did it go? What would I do differently next time?**
 
