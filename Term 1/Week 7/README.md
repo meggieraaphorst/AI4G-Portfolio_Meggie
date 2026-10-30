@@ -23,37 +23,39 @@ _List the files, or link to them. Notebook exports, screenshots, scripts._
 > Your tool and your SDG for this hackathon are announced at the **start of Friday's class**.
 > Write them down here once you know them.
 
-**Project title:**
+**Project title:** Waterbird Counter: detecting and counting waterbirds at Dutch city ponds
 
-**My pair partner:**
+**My pair partner:** Yazan Nemo
 
-**Tool we had to use:**
+**Tool we had to use:** SDG 15, Life on Land
 
 **SDG we had to address:**
 
 **What problem does it solve, and for whom?**
-_Name a real, specific user. "Everyone" is not a user._
+_Volunteer waterbird counters (e.g. Sovon volunteers) count birds by hand at city ponds and canals. With big groups this is slow and error-prone. Our tool counts birds per species from one photo, giving consistent counts that feed into trend monitoring, so declines, the spread of the exotic Egyptian goose, and priority ponds can be spotted earlier._
 
 **What did you build?**
-_Two or three sentences. What can a user actually do with it?_
+_A Streamlit app where a user uploads a pond photo and gets boxes around every mallard, coot and Egyptian goose, plus a count per species. Egyptian geese are flagged as exotic. Counts can be saved per location in a log and downloaded as CSV._
 
 **Link to the live thing (if any):**
-_Deployed URL, workflow export, video demo - whatever proves it works._
+_Runs locally (see below). Demo: [link to screen recording or screenshots in hackathon/]_
 
 **How do I run it?**
-_Short instructions so someone else can start it._
+_1. Create a `.env` file in `hackathon/` based on `.env.example` (Roboflow API key + model ID)
+2. Open `run_app.py` in VS Code and press Run. It installs the requirements and opens the app in your browser._
 
 **Who did what?**
-_Be honest about the split of work between you and your partner._
+_Yazan: filmed the dataset, frame extraction, model training and evaluation, Streamlit app, problem analysis.
+Meggie: lebeling the sampels, the presentation, README, ethical reflection.._
 
 **Ethical reflection - what are the risks of your tool? Who could it harm?**
-_Every hackathon requires this. One honest paragraph beats three vague ones._
+_Our dataset is 4 short videos from water ponds in the hague (almost 320 frames) plus ~40 scraped images from the internet. Our first model scored 89.6% mAP@50 but failed on new photos (coots labelled as mallards), because frames from the same videos were in both training and test data. Extra targeted data raised coot from 65% to 81%, but the model still only knows 3 species, so other birds get miscounted, and it was trained on autumn daylight only. If used for real decisions, systematic miscounts could make a population look like it is declining, sending conservation effort to the wrong place, and a false Egyptian goose detection could support control measures against birds that were not there. Photos of parks may include people, so the app stores counts only, no images. The model is an assistant: the volunteer verifies every count and stays accountable for what is reported._
 
 ### Checklist
-- [ ] Prototype code (or export / workflow file) is in `hackathon/`
-- [ ] This week's slides are in `hackathon/`
-- [ ] The prototype actually runs, and I wrote down how to run it
-- [ ] Ethical reflection written above
+- [x] Prototype code (or export / workflow file) is in `hackathon/`
+- [x] This week's slides are in `hackathon/`
+- [x] The prototype actually runs, and I wrote down how to run it
+- [x] Ethical reflection written above
 
 ---
 
@@ -70,8 +72,10 @@ _Every hackathon requires this. One honest paragraph beats three vague ones._
 ---
 
 ## 4. Reflection
+A high test score does not mean a model works. Our model scored ~90% but failed on photos from outside our own videos. Testing on truly unseen data exposed overfitting, and adding targeted data for the weakest class fixed it.
 
 **What is the most important thing I learned this week?**
+Conservation decisions depend on reliable counts. A tool that helps volunteers count faster only does good if its errors are known and checked by a human; otherwise it can push nature policy in the wrong direction.
 
 **Where does this connect to "AI for Good"?**
 _One concrete link to ethics, sustainability or social impact._
